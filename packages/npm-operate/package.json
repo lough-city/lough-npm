@@ -1,0 +1,30 @@
+{
+  "name": "@lough/npm-operate",
+  "version": "0.0.0",
+  "description": "lough npm operate.",
+  "keywords": [
+    "npm",
+    "node"
+  ],
+  "author": "City <city@nanzc.com>",
+  "homepage": "https://github.com/AnCIity/lough-npm",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnCIity/lough-npm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnCIity/lough-npm/issues"
+  },
+  "engines": {
+    "node": ">=14.17.0"
+  }
+}
