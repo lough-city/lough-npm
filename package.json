@@ -9,15 +9,6 @@
     "**/__tests__/**",
     "**/*.md"
   ],
-  "command": {
-    "publish": {
-      "registry": "https://registry.npmjs.org"
-    },
-    "version": {
-      "conventionalCommits": true,
-      "message": "chore(release): publish"
-    }
-  },
   "devDependencies": {
     "@lough/commitlint-config": "^0.1.1",
     "@lough/eslint-config": "^0.1.0",
