@@ -1,19 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import execa from 'execa';
-import { INpmParameters } from './types';
+import { INpmParameters, ISubPackage } from './types';
 import { PACKAGE_MANAGE_TOOL } from './constants';
-
-export const existsCommand = (command: string) => {
-  let test = false;
-
-  try {
-    execa.commandSync(command, { encoding: 'utf8' });
-    test = true;
-  } catch (error) {}
-
-  return test;
-};
 
 /**
  * npm 操作类
@@ -25,14 +14,13 @@ class NpmOperate {
 
   protected isLernaProject = false;
 
-  protected packages: Record<string, string> = {};
+  protected packages: Record<string, ISubPackage> = {};
 
   protected get rootConfigPath() {
     return path.join(this.options.rootPath, this.options.configPath);
   }
 
   constructor(parameters: INpmParameters = {}) {
-    // TODO: 初始化 npm init
     const { rootPath = process.cwd(), configPath = 'package.json', getEarsPackageManageTool } = parameters;
 
     this.options.rootPath = rootPath;
@@ -53,8 +41,16 @@ class NpmOperate {
     if (this.isLernaProject) {
       const files = fs.readdirSync(path.join(rootPath, 'packages'));
       for (const fileName of files) {
-        const config = this.readConfig(path.join(rootPath, 'packages', fileName, 'package.json'));
-        this.packages[config.name] = fileName;
+        const configPath = path.join(rootPath, 'packages', fileName, 'package.json');
+        const config = this.readConfig();
+        this.packages[config.name] = {
+          name: config.name,
+          dirName: fileName,
+          relativePath: path.join('packages', fileName),
+          absolutePath: path.join(rootPath, 'packages', fileName),
+          configPath,
+          config
+        };
       }
     }
   }
@@ -92,7 +88,7 @@ class NpmOperate {
    * @param packageName 子包名
    */
   readConfigLerna(packageName: string) {
-    return this.readConfig(path.join(this.options.rootPath, 'packages', this.packages[packageName]));
+    return this.readConfig(this.packages[packageName].configPath);
   }
 
   /**
@@ -121,7 +117,7 @@ class NpmOperate {
    * @param packageName 子包名
    */
   writeConfigLerna(config: Record<string, any>, packageName: string) {
-    return this.writeConfig(config, path.join(this.options.rootPath, 'packages', this.packages[packageName]));
+    return this.writeConfig(config, this.packages[packageName].configPath);
   }
 
   /**
@@ -233,5 +229,6 @@ class NpmOperate {
   }
 }
 
+export * from './types';
 export * from './constants';
 export default NpmOperate;
