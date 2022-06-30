@@ -16,7 +16,7 @@ class NpmOperate {
 
   packages: Record<string, ISubPackage> = {};
 
-  protected get rootConfigPath() {
+  get rootConfigPath() {
     return path.join(this.options.rootPath, this.options.configPath);
   }
 
