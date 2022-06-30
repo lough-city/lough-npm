@@ -8,7 +8,6 @@
       "registry": "https://registry.npmjs.org"
     },
     "version": {
-      "conventionalCommits": true,
       "message": "chore(release): publish"
     }
   }

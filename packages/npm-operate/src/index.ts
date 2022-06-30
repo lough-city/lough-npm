@@ -227,4 +227,5 @@ class NpmOperate {
   }
 }
 
+export * from './constants';
 export default NpmOperate;
