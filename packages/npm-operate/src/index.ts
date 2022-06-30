@@ -32,6 +32,7 @@ class NpmOperate {
   }
 
   constructor(parameters: INpmParameters = {}) {
+    // TODO: 初始化 npm init
     const { rootPath = process.cwd(), configPath = 'package.json', getEarsPackageManageTool } = parameters;
 
     this.options.rootPath = rootPath;
@@ -111,8 +112,16 @@ class NpmOperate {
    * 写配置
    * @param config 待写入配置
    */
-  writeConfig(config: Record<string, any>) {
-    fs.writeFileSync(this.rootConfigPath, JSON.stringify(config, null, 2), 'utf8');
+  writeConfig(config: Record<string, any>, configPath = this.rootConfigPath) {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  }
+
+  /**
+   * 写子包配置
+   * @param packageName 子包名
+   */
+  writeConfigLerna(config: Record<string, any>, packageName: string) {
+    return this.writeConfig(config, path.join(this.options.rootPath, 'packages', this.packages[packageName]));
   }
 
   /**
