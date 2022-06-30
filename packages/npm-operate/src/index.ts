@@ -8,7 +8,13 @@ import { PACKAGE_MANAGE_TOOL } from './constants';
  * npm 操作类
  */
 class NpmOperate {
-  protected options = {} as Required<Omit<INpmParameters, 'getEarsPackageManageTool'>>;
+  protected options = {} as Required<
+    Omit<INpmParameters, 'getEarsPackageManageTool'> & {
+      lernaConfigPath: string;
+      npmLockPath: string;
+      yarnLockPath: string;
+    }
+  >;
 
   packageManageTool = PACKAGE_MANAGE_TOOL.yarn;
 
@@ -25,32 +31,42 @@ class NpmOperate {
 
     this.options.rootPath = rootPath;
     this.options.configPath = configPath;
+    this.options.npmLockPath = path.join(rootPath, 'package-lock.json');
+    this.options.yarnLockPath = path.join(rootPath, 'yarn.lock');
+    this.options.lernaConfigPath = path.join(rootPath, 'lerna.json');
 
     if (!fs.existsSync(path.join(rootPath, configPath))) throw new Error('未检测到 NPM 配置！');
 
-    this.packageManageTool = fs.existsSync(`${rootPath}/package-lock.json`)
+    this.packageManageTool = fs.existsSync(this.options.npmLockPath)
       ? PACKAGE_MANAGE_TOOL.npm
-      : fs.existsSync(`${rootPath}/yarn.lock`)
+      : fs.existsSync(this.options.yarnLockPath)
       ? PACKAGE_MANAGE_TOOL.yarn
       : undefined;
 
     if (!this.packageManageTool && getEarsPackageManageTool)
       this.packageManageTool = getEarsPackageManageTool(PACKAGE_MANAGE_TOOL);
-    this.isLernaProject = fs.existsSync(`${rootPath}/lerna.json`);
+    this.isLernaProject = fs.existsSync(this.options.lernaConfigPath);
 
     if (this.isLernaProject) {
-      const files = fs.readdirSync(path.join(rootPath, 'packages'));
-      for (const fileName of files) {
-        const configPath = path.join(rootPath, 'packages', fileName, 'package.json');
-        const config = this.readConfig(configPath);
-        this.packages[config.name] = {
-          name: config.name,
-          dirName: fileName,
-          relativePath: path.join('packages', fileName),
-          absolutePath: path.join(rootPath, 'packages', fileName),
-          configPath,
-          config
-        };
+      const lernaConfig = this.readConfig(this.options.lernaConfigPath);
+
+      for (let lernaPackage of lernaConfig.packages) {
+        lernaPackage = (lernaPackage as string).replace('/*', '');
+
+        const files = fs.readdirSync(path.join(rootPath, lernaPackage));
+        for (const fileName of files) {
+          const configPath = path.join(rootPath, lernaPackage, fileName, 'package.json');
+          const config = this.readConfig(configPath);
+          this.packages[config.name] = {
+            name: config.name,
+            dirName: fileName,
+            relativeDir: lernaPackage,
+            relativePath: path.join(lernaPackage, fileName),
+            absolutePath: path.join(rootPath, lernaPackage, fileName),
+            configPath,
+            config
+          };
+        }
       }
     }
   }

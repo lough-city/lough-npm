@@ -13,6 +13,10 @@ export interface ISubPackage {
    */
   dirName: string;
   /**
+   * 相对主包目录
+   */
+  relativeDir: string;
+  /**
    * 相对主包路径
    */
   relativePath: string;
@@ -28,6 +32,13 @@ export interface ISubPackage {
    * 子包配置
    */
   config: Record<string, any>;
+}
+
+/**
+ * Lerna Config
+ */
+export interface ILernaConfig {
+  packagesPath: string;
 }
 
 /**
