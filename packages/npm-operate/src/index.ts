@@ -53,7 +53,7 @@ class NpmOperate {
       const files = fs.readdirSync(path.join(rootPath, 'packages'));
       for (const fileName of files) {
         const config = this.readConfig(path.join(rootPath, 'packages', fileName, 'package.json'));
-        this.packages[config.name] = config;
+        this.packages[config.name] = fileName;
       }
     }
   }
@@ -84,6 +84,27 @@ class NpmOperate {
     const config = JSON.parse(text);
 
     return config;
+  }
+
+  /**
+   * 读子包配置
+   * @param packageName 子包名
+   */
+  readConfigLerna(packageName: string) {
+    return this.readConfig(path.join(this.options.rootPath, 'packages', this.packages[packageName]));
+  }
+
+  /**
+   * 读所有子包配置
+   */
+  readConfigLernaAll() {
+    const configAll: Record<string, Record<string, any>> = {};
+
+    for (const packageName of Object.keys(this.packages)) {
+      configAll[packageName] = this.readConfigLerna(packageName);
+    }
+
+    return configAll;
   }
 
   /**
@@ -185,9 +206,8 @@ class NpmOperate {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
     if (!Array.isArray(packages)) packages = [packages];
 
-    // TODO: 按照子包进行卸载操作
     for (const packageName of packages) {
-      const npmConfig = this.readConfig(path.join(this.options.rootPath, 'packages'));
+      const npmConfig = this.readConfigLerna(packageName);
       let allDependencies = [];
 
       if (npmConfig.hasOwnProperty('dependencies')) {
