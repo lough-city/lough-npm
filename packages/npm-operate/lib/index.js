@@ -17,21 +17,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.existsCommand = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const execa_1 = __importDefault(require("execa"));
 const constants_1 = require("./constants");
-const existsCommand = (command) => {
-    let test = false;
-    try {
-        execa_1.default.commandSync(command, { encoding: 'utf8' });
-        test = true;
-    }
-    catch (error) { }
-    return test;
-};
-exports.existsCommand = existsCommand;
 /**
  * npm 操作类
  */
@@ -57,8 +46,16 @@ class NpmOperate {
         if (this.isLernaProject) {
             const files = fs_1.default.readdirSync(path_1.default.join(rootPath, 'packages'));
             for (const fileName of files) {
-                const config = this.readConfig(path_1.default.join(rootPath, 'packages', fileName, 'package.json'));
-                this.packages[config.name] = fileName;
+                const configPath = path_1.default.join(rootPath, 'packages', fileName, 'package.json');
+                const config = this.readConfig();
+                this.packages[config.name] = {
+                    name: config.name,
+                    dirName: fileName,
+                    relativePath: path_1.default.join('packages', fileName),
+                    absolutePath: path_1.default.join(rootPath, 'packages', fileName),
+                    configPath,
+                    config
+                };
             }
         }
     }
@@ -94,7 +91,7 @@ class NpmOperate {
      * @param packageName 子包名
      */
     readConfigLerna(packageName) {
-        return this.readConfig(path_1.default.join(this.options.rootPath, 'packages', this.packages[packageName]));
+        return this.readConfig(this.packages[packageName].configPath);
     }
     /**
      * 读所有子包配置
@@ -110,8 +107,15 @@ class NpmOperate {
      * 写配置
      * @param config 待写入配置
      */
-    writeConfig(config) {
-        fs_1.default.writeFileSync(this.rootConfigPath, JSON.stringify(config, null, 2), 'utf8');
+    writeConfig(config, configPath = this.rootConfigPath) {
+        fs_1.default.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    }
+    /**
+     * 写子包配置
+     * @param packageName 子包名
+     */
+    writeConfigLerna(config, packageName) {
+        return this.writeConfig(config, this.packages[packageName].configPath);
     }
     /**
      * 安装生产依赖
@@ -201,20 +205,18 @@ class NpmOperate {
             packages = [packages];
         for (const packageName of packages) {
             const npmConfig = this.readConfigLerna(packageName);
-            let allDependencies = [];
-            if (npmConfig.hasOwnProperty('dependencies')) {
-                allDependencies = allDependencies.concat(Object.keys(npmConfig.dependencies));
-            }
-            if (npmConfig.hasOwnProperty('devDependencies')) {
-                allDependencies = allDependencies.concat(Object.keys(npmConfig.devDependencies));
-            }
             for (const dependency of dependencies) {
-                if (!allDependencies.includes(dependency))
-                    continue;
-                execa_1.default.commandSync(this.getUninstallCommand(dependency), { stdio: 'inherit' });
+                if (npmConfig.hasOwnProperty('dependencies') && npmConfig.dependencies[dependency]) {
+                    delete npmConfig.dependencies[dependency];
+                }
+                if (npmConfig.hasOwnProperty('devDependencies') && npmConfig.devDependencies[dependency]) {
+                    delete npmConfig.devDependencies[dependency];
+                }
             }
+            this.writeConfigLerna(npmConfig, packageName);
         }
     }
 }
+__exportStar(require("./types"), exports);
 __exportStar(require("./constants"), exports);
 exports.default = NpmOperate;
