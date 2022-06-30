@@ -42,7 +42,7 @@ class NpmOperate {
       const files = fs.readdirSync(path.join(rootPath, 'packages'));
       for (const fileName of files) {
         const configPath = path.join(rootPath, 'packages', fileName, 'package.json');
-        const config = this.readConfig();
+        const config = this.readConfig(configPath);
         this.packages[config.name] = {
           name: config.name,
           dirName: fileName,
