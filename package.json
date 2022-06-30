@@ -20,7 +20,8 @@
   "scripts": {
     "lint:es": "eslint -c .eslintrc.js --ext .ts,.tsx ./",
     "lint:es-fix": "eslint --fix -c .eslintrc.js --ext .ts,.tsx ./",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "release": "lerna run build && lerna publish"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
