@@ -217,21 +217,18 @@ class NpmOperate {
 
     for (const packageName of packages) {
       const npmConfig = this.readConfigLerna(packageName);
-      let allDependencies = [];
-
-      if (npmConfig.hasOwnProperty('dependencies')) {
-        allDependencies = allDependencies.concat(Object.keys(npmConfig.dependencies));
-      }
-
-      if (npmConfig.hasOwnProperty('devDependencies')) {
-        allDependencies = allDependencies.concat(Object.keys(npmConfig.devDependencies));
-      }
 
       for (const dependency of dependencies) {
-        if (!allDependencies.includes(dependency)) continue;
+        if (npmConfig.hasOwnProperty('dependencies') && npmConfig.dependencies[dependency]) {
+          delete npmConfig.dependencies[dependency];
+        }
 
-        execa.commandSync(this.getUninstallCommand(dependency), { stdio: 'inherit' });
+        if (npmConfig.hasOwnProperty('devDependencies') && npmConfig.devDependencies[dependency]) {
+          delete npmConfig.devDependencies[dependency];
+        }
       }
+
+      this.writeConfigLerna(npmConfig, packageName);
     }
   }
 }
