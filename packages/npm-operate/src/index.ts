@@ -10,11 +10,11 @@ import { PACKAGE_MANAGE_TOOL } from './constants';
 class NpmOperate {
   protected options = {} as Required<Omit<INpmParameters, 'getEarsPackageManageTool'>>;
 
-  protected packageManageTool = PACKAGE_MANAGE_TOOL.yarn;
+  packageManageTool = PACKAGE_MANAGE_TOOL.yarn;
 
-  protected isLernaProject = false;
+  isLernaProject = false;
 
-  protected packages: Record<string, ISubPackage> = {};
+  packages: Record<string, ISubPackage> = {};
 
   protected get rootConfigPath() {
     return path.join(this.options.rootPath, this.options.configPath);
