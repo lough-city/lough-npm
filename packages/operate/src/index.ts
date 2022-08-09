@@ -16,7 +16,7 @@ class NpmOperate {
     }
   >;
 
-  packageManageTool = PACKAGE_MANAGE_TOOL.yarn;
+  packageManageTool = PACKAGE_MANAGE_TOOL.npm;
 
   isLernaProject = false;
 
@@ -41,10 +41,10 @@ class NpmOperate {
       ? PACKAGE_MANAGE_TOOL.npm
       : fs.existsSync(this.options.yarnLockPath)
       ? PACKAGE_MANAGE_TOOL.yarn
-      : undefined;
+      : getEarsPackageManageTool
+      ? getEarsPackageManageTool(PACKAGE_MANAGE_TOOL)
+      : PACKAGE_MANAGE_TOOL.npm;
 
-    if (!this.packageManageTool && getEarsPackageManageTool)
-      this.packageManageTool = getEarsPackageManageTool(PACKAGE_MANAGE_TOOL);
     this.isLernaProject = fs.existsSync(this.options.lernaConfigPath);
 
     if (this.isLernaProject) {
@@ -169,7 +169,7 @@ class NpmOperate {
 
     const npmConfigText = fs.readFileSync(this.rootConfigPath, 'utf-8');
     const npmConfig = JSON.parse(npmConfigText);
-    let allDependencies = [];
+    let allDependencies: Array<string> = [];
 
     if (npmConfig.hasOwnProperty('dependencies')) {
       allDependencies = allDependencies.concat(Object.keys(npmConfig.dependencies));
