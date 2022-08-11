@@ -1,4 +1,5 @@
-import { PACKAGE_MANAGE_TOOL } from './constants';
+import { PACKAGE_MANAGE_TOOL } from '../constants';
+import { Package } from './package';
 
 /**
  * 子包数据
@@ -31,7 +32,7 @@ export interface ISubPackage {
   /**
    * 子包配置
    */
-  config: Record<string, any>;
+  config: Package;
 }
 
 /**

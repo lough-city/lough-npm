@@ -3,6 +3,7 @@ import path from 'path';
 import execa from 'execa';
 import { INpmParameters, ISubPackage } from './types';
 import { PACKAGE_MANAGE_TOOL } from './constants';
+import { Package } from './types/package';
 
 /**
  * npm 操作类
@@ -48,7 +49,8 @@ class NpmOperate {
     this.isLernaProject = fs.existsSync(this.options.lernaConfigPath);
 
     if (this.isLernaProject) {
-      const lernaConfig = this.readConfig(this.options.lernaConfigPath);
+      const text = fs.readFileSync(this.options.lernaConfigPath, 'utf-8');
+      const lernaConfig = JSON.parse(text);
 
       for (let lernaPackage of lernaConfig.packages) {
         lernaPackage = (lernaPackage as string).replace('/*', '');
@@ -96,7 +98,7 @@ class NpmOperate {
     const text = fs.readFileSync(configPath, 'utf-8');
     const config = JSON.parse(text);
 
-    return config;
+    return config as Package;
   }
 
   /**
@@ -111,7 +113,7 @@ class NpmOperate {
    * 读所有子包配置
    */
   readConfigLernaAll() {
-    const configAll: Record<string, Record<string, any>> = {};
+    const configAll: Record<string, Package> = {};
 
     for (const packageName of Object.keys(this.packages)) {
       configAll[packageName] = this.readConfigLerna(packageName);
