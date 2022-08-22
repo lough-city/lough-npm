@@ -233,11 +233,11 @@ class NpmOperate {
       const npmConfig = this.readConfigLerna(packageName);
 
       for (const dependency of dependencies) {
-        if (npmConfig.hasOwnProperty('dependencies') && npmConfig.dependencies[dependency]) {
+        if (npmConfig.hasOwnProperty('dependencies') && npmConfig.dependencies?.[dependency]) {
           delete npmConfig.dependencies[dependency];
         }
 
-        if (npmConfig.hasOwnProperty('devDependencies') && npmConfig.devDependencies[dependency]) {
+        if (npmConfig.hasOwnProperty('devDependencies') && npmConfig.devDependencies?.[dependency]) {
           delete npmConfig.devDependencies[dependency];
         }
       }
@@ -249,4 +249,5 @@ class NpmOperate {
 
 export * from './constants';
 export * from './types';
+export * from './types/package';
 export default NpmOperate;
