@@ -40,11 +40,6 @@ interface IPackageParameters {
    * @default false
    */
   isLerna?: boolean;
-  /**
-   * 是否 Yarn
-   * @default false
-   */
-  isYarn?: boolean;
 }
 
 const readConfig = (rootConfigPath: string) => {
@@ -57,20 +52,24 @@ const readConfig = (rootConfigPath: string) => {
 const commandMap = {
   npm: {
     install: {
+      workspace: false,
       save: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName}`,
       dev: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName} --save-dev`
     },
     uninstall: {
+      workspace: false,
       save: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName}`,
       dev: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName} --save-dev`
     }
   },
   yarn: {
     install: {
+      workspace: false,
       save: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName}`,
       dev: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} --dev`
     },
     uninstall: {
+      workspace: false,
       save: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName}`,
       dev: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} --dev`
     }
@@ -78,20 +77,24 @@ const commandMap = {
   workspaces: {
     npm: {
       install: {
+        workspace: false,
         save: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName}`,
         dev: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName} --save-dev`
       },
       uninstall: {
+        workspace: false,
         save: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName}`,
         dev: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName} --save-dev`
       }
     },
     yarn: {
       install: {
+        workspace: false,
         save: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} -W`,
         dev: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} -W --dev`
       },
       uninstall: {
+        workspace: false,
         save: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} -W`,
         dev: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} -W --dev`
       }
@@ -100,12 +103,14 @@ const commandMap = {
   workspace: {
     npm: {
       install: {
+        workspace: true,
         save: (waitInstallPackageName: string, subPackageName: string) =>
           `npm install ${waitInstallPackageName} -w ${subPackageName}`,
         dev: (waitInstallPackageName: string, subPackageName: string) =>
           `npm install ${waitInstallPackageName} -w ${subPackageName} --save-dev`
       },
       uninstall: {
+        workspace: true,
         save: (waitUninstallPackageName: string, subPackageName: string) =>
           `npm uninstall ${waitUninstallPackageName} -w ${subPackageName}`,
         dev: (waitUninstallPackageName: string, subPackageName: string) =>
@@ -114,12 +119,14 @@ const commandMap = {
     },
     yarn: {
       install: {
+        workspace: true,
         save: (waitInstallPackageName: string, subPackageName: string) =>
           `yarn workspace ${subPackageName} add ${waitInstallPackageName}`,
         dev: (waitInstallPackageName: string, subPackageName: string) =>
           `yarn workspace ${subPackageName} add ${waitInstallPackageName} --dev`
       },
       uninstall: {
+        workspace: true,
         save: (waitUninstallPackageName: string, subPackageName: string) =>
           `yarn workspace ${subPackageName} remove ${waitUninstallPackageName}`,
         dev: (waitUninstallPackageName: string, subPackageName: string) =>
@@ -128,51 +135,55 @@ const commandMap = {
     },
     lerna: {
       install: {
+        workspace: true,
         save: (waitInstallPackageName: string, subPackageName: string) =>
           `lerna add ${waitInstallPackageName} --scope=${subPackageName}`,
         dev: (waitInstallPackageName: string, subPackageName: string) =>
           `lerna add ${waitInstallPackageName} --scope=${subPackageName} --dev`
       },
       uninstall: {
-        save: (waitInstallPackageName: string, subPackageName: string) => false,
-        dev: (waitInstallPackageName: string, subPackageName: string) => false
+        workspace: false,
+        save: (waitInstallPackageName: string, subPackageName: string, isLerna: boolean) => false,
+        dev: (waitInstallPackageName: string, subPackageName: string, isLerna: boolean) => false
       }
     }
   }
 };
 
-export class Package {
+// protected get command(): {
+//   install: {
+//     save: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
+//     dev: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
+//   };
+//   uninstall: {
+//     save: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
+//     dev: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
+//   };
+// } {
+//   if (this.options.isWorkspace) {
+//     if (this.options.isLerna) return commandMap.workspace.lerna as any;
+//     if (this.options.isYarn) return commandMap.workspace.yarn as any;
+//     return commandMap.workspace.npm as any;
+//   }
+
+//   if (this.options.isWorkspaces) {
+//     if (this.options.isYarn) return commandMap.workspaces.yarn;
+//     return commandMap.workspaces.npm;
+//   }
+
+//   if (this.options.isYarn) return commandMap.yarn;
+//   return commandMap.npm;
+// }
+
+export abstract class Package {
+  name: string;
+
   protected options: Required<Omit<IPackageParameters, 'emptyCreate'>> & {
     /**
      * 配置路径
      */
     readonly rootConfigPath: string;
   };
-
-  protected get command(): {
-    install: {
-      save: (packageName: string, subPackageName?: string) => string;
-      dev: (packageName: string, subPackageName?: string) => string;
-    };
-    uninstall: {
-      save: (packageName: string, subPackageName?: string) => string;
-      dev: (packageName: string, subPackageName?: string) => string;
-    };
-  } {
-    if (this.options.isWorkspace) {
-      if (this.options.isLerna) return commandMap.workspace.lerna as any;
-      if (this.options.isYarn) return commandMap.workspace.yarn as any;
-      return commandMap.workspace.npm as any;
-    }
-
-    if (this.options.isWorkspaces) {
-      if (this.options.isYarn) return commandMap.workspaces.yarn;
-      return commandMap.workspaces.npm;
-    }
-
-    if (this.options.isYarn) return commandMap.yarn;
-    return commandMap.npm;
-  }
 
   constructor(parameters: IPackageParameters) {
     const {
@@ -182,9 +193,10 @@ export class Package {
       isWorkspace = false,
       workspacesDir = dirName,
       relativeWorkspacesDir = '',
-      isLerna = false,
-      isYarn = false
+      isLerna = false
     } = parameters;
+
+    const config = readConfig(path.join(dirName, configFileName));
 
     this.options = {
       dirName: dirName,
@@ -192,13 +204,14 @@ export class Package {
       get rootConfigPath() {
         return path.join(this.configDirName, this.configFileName);
       },
-      isWorkspaces: isWorkspaces || !!readConfig(path.join(dirName, configFileName)).workspaces,
+      isWorkspaces: isWorkspaces || !!config.workspaces,
       isWorkspace: isWorkspace,
       workspacesDir: workspacesDir,
       relativeWorkspacesDir: relativeWorkspacesDir,
-      isLerna: isLerna || fs.existsSync(path.join(dirName, 'lerna.json')),
-      isYarn: isYarn || fs.existsSync(path.join(dirName, 'yarn.lock'))
+      isLerna: isLerna || fs.existsSync(path.join(dirName, 'lerna.json'))
     };
+
+    this.name = config.name;
   }
 
   /**
@@ -231,6 +244,24 @@ export class Package {
   }
 
   /**
+   * 安装命令
+   */
+  protected abstract commandInstall(
+    waitInstallPackageName: string,
+    workspacePackageName?: string,
+    isDev?: boolean
+  ): execa.ExecaSyncReturnValue<string>;
+
+  /**
+   * 卸载命令
+   */
+  protected abstract commandUnInstall(
+    waitInstallPackageName: string,
+    workspacePackageName?: string,
+    isDev?: boolean
+  ): execa.ExecaSyncReturnValue<string>;
+
+  /**
    * 安装生产依赖
    * @param dependencies 待安装依赖
    */
@@ -238,7 +269,7 @@ export class Package {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     for (const dependency of dependencies) {
-      execa.commandSync(this.command.install.save(dependency), { stdio: 'inherit' });
+      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
     }
   }
 
@@ -250,7 +281,7 @@ export class Package {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     for (const dependency of dependencies) {
-      execa.commandSync(this.command.install.dev(dependency), { stdio: 'inherit' });
+      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, true);
     }
   }
 
@@ -276,7 +307,7 @@ export class Package {
     for (const dependency of dependencies) {
       if (!allDependencies.includes(dependency)) continue;
 
-      execa.commandSync(this.command.uninstall.save(dependency), { stdio: 'inherit' });
+      this.commandUnInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
     }
   }
 }
