@@ -1,5 +1,5 @@
 import { PACKAGE_MANAGE_TOOL } from '../constants';
-import { Package } from './package';
+import { IPackage } from './package';
 
 /**
  * 子包数据
@@ -22,17 +22,17 @@ export interface ISubPackage {
    */
   relativePath: string;
   /**
-   * 绝对路径
+   * 绝对目录
    */
   absolutePath: string;
   /**
-   * 子包 package.json 路径
+   * 子包 package.json 绝对路径
    */
-  configPath: string;
+  absoluteConfigPath: string;
   /**
    * 子包配置
    */
-  config: Package;
+  config: IPackage;
 }
 
 /**

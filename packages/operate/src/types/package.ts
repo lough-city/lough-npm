@@ -242,7 +242,7 @@ interface TripartiteConfig {
   'lint-staged': Record<string, Array<string>>;
 }
 
-export type Package = RequiredConfig &
+export type IPackage = RequiredConfig &
   Partial<DescriptionConfig> &
   Partial<NormConfig> &
   Partial<ScriptConfig> &

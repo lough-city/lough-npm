@@ -3,7 +3,7 @@ import path from 'path';
 import execa from 'execa';
 import { INpmParameters, ISubPackage } from './types';
 import { PACKAGE_MANAGE_TOOL } from './constants';
-import { Package } from './types/package';
+import { IPackage } from './types/package';
 
 /**
  * npm 操作类
@@ -52,7 +52,7 @@ class NpmOperate {
       const text = fs.readFileSync(this.options.lernaConfigPath, 'utf-8');
       const lernaConfig = JSON.parse(text);
 
-      for (let lernaPackage of lernaConfig.packages) {
+      for (let lernaPackage of lernaConfig.packages || ['packages/*']) {
         lernaPackage = (lernaPackage as string).replace('/*', '');
 
         const files = fs.readdirSync(path.join(rootPath, lernaPackage));
@@ -65,7 +65,7 @@ class NpmOperate {
             relativeDir: lernaPackage,
             relativePath: path.join(lernaPackage, fileName),
             absolutePath: path.join(rootPath, lernaPackage, fileName),
-            configPath,
+            absoluteConfigPath: configPath,
             config
           };
         }
@@ -98,7 +98,7 @@ class NpmOperate {
     const text = fs.readFileSync(configPath, 'utf-8');
     const config = JSON.parse(text);
 
-    return config as Package;
+    return config as IPackage;
   }
 
   /**
@@ -106,14 +106,14 @@ class NpmOperate {
    * @param packageName 子包名
    */
   readConfigLerna(packageName: string) {
-    return this.readConfig(this.packages[packageName].configPath);
+    return this.readConfig(this.packages[packageName].absoluteConfigPath);
   }
 
   /**
    * 读所有子包配置
    */
   readConfigLernaAll() {
-    const configAll: Record<string, Package> = {};
+    const configAll: Record<string, IPackage> = {};
 
     for (const packageName of Object.keys(this.packages)) {
       configAll[packageName] = this.readConfigLerna(packageName);
@@ -125,6 +125,7 @@ class NpmOperate {
   /**
    * 写配置
    * @param config 待写入配置
+   * @todo: config 函数式写入，部分混入
    */
   writeConfig(config: Record<string, any>, configPath = this.rootConfigPath) {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
@@ -135,7 +136,7 @@ class NpmOperate {
    * @param packageName 子包名
    */
   writeConfigLerna(config: Record<string, any>, packageName: string) {
-    return this.writeConfig(config, this.packages[packageName].configPath);
+    return this.writeConfig(config, this.packages[packageName].absoluteConfigPath);
   }
 
   /**
@@ -251,3 +252,5 @@ export * from './constants';
 export * from './types';
 export * from './types/package';
 export default NpmOperate;
+
+// TODO: 去除 lerna 改用 workspaces
