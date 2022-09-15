@@ -42,139 +42,6 @@ interface IPackageParameters {
   isLerna?: boolean;
 }
 
-const readConfig = (rootConfigPath: string) => {
-  const text = fs.readFileSync(rootConfigPath, 'utf-8');
-  const config = JSON.parse(text);
-
-  return config as IPackage;
-};
-
-const commandMap = {
-  npm: {
-    install: {
-      workspace: false,
-      save: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName}`,
-      dev: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName} --save-dev`
-    },
-    uninstall: {
-      workspace: false,
-      save: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName}`,
-      dev: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName} --save-dev`
-    }
-  },
-  yarn: {
-    install: {
-      workspace: false,
-      save: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName}`,
-      dev: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} --dev`
-    },
-    uninstall: {
-      workspace: false,
-      save: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName}`,
-      dev: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} --dev`
-    }
-  },
-  workspaces: {
-    npm: {
-      install: {
-        workspace: false,
-        save: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName}`,
-        dev: (waitInstallPackageName: string) => `npm install ${waitInstallPackageName} --save-dev`
-      },
-      uninstall: {
-        workspace: false,
-        save: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName}`,
-        dev: (waitUninstallPackageName: string) => `npm uninstall ${waitUninstallPackageName} --save-dev`
-      }
-    },
-    yarn: {
-      install: {
-        workspace: false,
-        save: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} -W`,
-        dev: (waitInstallPackageName: string) => `yarn add ${waitInstallPackageName} -W --dev`
-      },
-      uninstall: {
-        workspace: false,
-        save: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} -W`,
-        dev: (waitUninstallPackageName: string) => `yarn remove ${waitUninstallPackageName} -W --dev`
-      }
-    }
-  },
-  workspace: {
-    npm: {
-      install: {
-        workspace: true,
-        save: (waitInstallPackageName: string, subPackageName: string) =>
-          `npm install ${waitInstallPackageName} -w ${subPackageName}`,
-        dev: (waitInstallPackageName: string, subPackageName: string) =>
-          `npm install ${waitInstallPackageName} -w ${subPackageName} --save-dev`
-      },
-      uninstall: {
-        workspace: true,
-        save: (waitUninstallPackageName: string, subPackageName: string) =>
-          `npm uninstall ${waitUninstallPackageName} -w ${subPackageName}`,
-        dev: (waitUninstallPackageName: string, subPackageName: string) =>
-          `npm uninstall ${waitUninstallPackageName} -w ${subPackageName} --save-dev`
-      }
-    },
-    yarn: {
-      install: {
-        workspace: true,
-        save: (waitInstallPackageName: string, subPackageName: string) =>
-          `yarn workspace ${subPackageName} add ${waitInstallPackageName}`,
-        dev: (waitInstallPackageName: string, subPackageName: string) =>
-          `yarn workspace ${subPackageName} add ${waitInstallPackageName} --dev`
-      },
-      uninstall: {
-        workspace: true,
-        save: (waitUninstallPackageName: string, subPackageName: string) =>
-          `yarn workspace ${subPackageName} remove ${waitUninstallPackageName}`,
-        dev: (waitUninstallPackageName: string, subPackageName: string) =>
-          `yarn workspace ${subPackageName} remove ${waitUninstallPackageName} --dev`
-      }
-    },
-    lerna: {
-      install: {
-        workspace: true,
-        save: (waitInstallPackageName: string, subPackageName: string) =>
-          `lerna add ${waitInstallPackageName} --scope=${subPackageName}`,
-        dev: (waitInstallPackageName: string, subPackageName: string) =>
-          `lerna add ${waitInstallPackageName} --scope=${subPackageName} --dev`
-      },
-      uninstall: {
-        workspace: false,
-        save: (waitInstallPackageName: string, subPackageName: string, isLerna: boolean) => false,
-        dev: (waitInstallPackageName: string, subPackageName: string, isLerna: boolean) => false
-      }
-    }
-  }
-};
-
-// protected get command(): {
-//   install: {
-//     save: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
-//     dev: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
-//   };
-//   uninstall: {
-//     save: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
-//     dev: (packageName: string, subPackageName?: string, isLerna?: boolean) => string;
-//   };
-// } {
-//   if (this.options.isWorkspace) {
-//     if (this.options.isLerna) return commandMap.workspace.lerna as any;
-//     if (this.options.isYarn) return commandMap.workspace.yarn as any;
-//     return commandMap.workspace.npm as any;
-//   }
-
-//   if (this.options.isWorkspaces) {
-//     if (this.options.isYarn) return commandMap.workspaces.yarn;
-//     return commandMap.workspaces.npm;
-//   }
-
-//   if (this.options.isYarn) return commandMap.yarn;
-//   return commandMap.npm;
-// }
-
 export abstract class Package {
   name: string;
 
@@ -183,6 +50,13 @@ export abstract class Package {
      * 配置路径
      */
     readonly rootConfigPath: string;
+  };
+
+  static readConfig = (rootConfigPath: string) => {
+    const text = fs.readFileSync(rootConfigPath, 'utf-8');
+    const config = JSON.parse(text);
+
+    return config as IPackage;
   };
 
   constructor(parameters: IPackageParameters) {
@@ -196,7 +70,7 @@ export abstract class Package {
       isLerna = false
     } = parameters;
 
-    const config = readConfig(path.join(dirName, configFileName));
+    const config = Package.readConfig(path.join(dirName, configFileName));
 
     this.options = {
       dirName: dirName,
@@ -218,10 +92,7 @@ export abstract class Package {
    * 读配置
    */
   readConfig() {
-    const text = fs.readFileSync(this.options.rootConfigPath, 'utf-8');
-    const config = JSON.parse(text);
-
-    return config as IPackage;
+    return Package.readConfig(this.options.rootConfigPath);
   }
 
   /**

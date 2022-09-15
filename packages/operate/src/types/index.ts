@@ -58,7 +58,6 @@ export interface INpmParameters {
   configPath?: string;
   /**
    * 获取兜底包管理工具
-   * TODO: 异步处理
    */
   getEarsPackageManageTool?: (map: typeof PACKAGE_MANAGE_TOOL) => PACKAGE_MANAGE_TOOL;
 }

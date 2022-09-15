@@ -252,5 +252,3 @@ export * from './constants';
 export * from './types';
 export * from './types/package';
 export default NpmOperate;
-
-// TODO: 去除 lerna 改用 workspaces
