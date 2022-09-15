@@ -36,6 +36,7 @@
     "execa": "5.1.1"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   }
 }

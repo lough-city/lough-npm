@@ -1,63 +1,45 @@
-import { PACKAGE_MANAGE_TOOL } from '../constants';
-import { IPackage } from './package';
-
 /**
- * 子包数据
+ * Package 类参数
  */
-export interface ISubPackage {
-  /**
-   * 名称
-   */
-  name: string;
+export interface IPackageParameters {
   /**
    * 目录名称
-   */
-  dirName: string;
-  /**
-   * 相对主包目录
-   */
-  relativeDir: string;
-  /**
-   * 相对主包路径
-   */
-  relativePath: string;
-  /**
-   * 绝对目录
-   */
-  absolutePath: string;
-  /**
-   * 子包 package.json 绝对路径
-   */
-  absoluteConfigPath: string;
-  /**
-   * 子包配置
-   */
-  config: IPackage;
-}
-
-/**
- * Lerna Config
- */
-export interface ILernaConfig {
-  packagesPath: string;
-}
-
-/**
- * npm 操作类参数
- */
-export interface INpmParameters {
-  /**
-   * 项目根路径
    * @default process.cwd()
    */
-  rootPath?: string;
+  dirName?: string;
   /**
-   * 包 package.json 路径
+   * 配置文件名称
    * @default 'package.json'
    */
-  configPath?: string;
+  configFileName?: string;
   /**
-   * 获取兜底包管理工具
+   * 是否工作空间
+   * @description 默认判断 `dirName` 下 `package.json` `workspaces` 属性
    */
-  getEarsPackageManageTool?: (map: typeof PACKAGE_MANAGE_TOOL) => PACKAGE_MANAGE_TOOL;
+  isWorkspaces?: boolean;
+  /**
+   * 工作空间目录
+   * @default `dirName`
+   */
+  workspacesDir?: string;
+  /**
+   * 是否工作区
+   * @default false
+   */
+  isWorkspace?: boolean;
+  /**
+   * 相对工作空间目录
+   * @default ''
+   */
+  relativeWorkspacesDir?: string;
+  /**
+   * 是否 Lerna 项目
+   * @description 默认判断 `dirName` 下 `lerna.json`
+   */
+  isLerna?: boolean;
+  /**
+   * 是否 Yarn
+   * @description 默认判断 `dirName` 下 `yarn.lock`
+   */
+  isYarn?: boolean;
 }

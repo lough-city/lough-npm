@@ -1,142 +1,217 @@
 import fs from 'fs';
 import path from 'path';
 import execa from 'execa';
-import { INpmParameters, ISubPackage } from './types';
-import { PACKAGE_MANAGE_TOOL } from './constants';
+import { IPackageParameters } from './types';
 import { IPackage } from './types/package';
 
-/**
- * npm 操作类
- */
-class NpmOperate {
-  protected options = {} as Required<
-    Omit<INpmParameters, 'getEarsPackageManageTool'> & {
-      lernaConfigPath: string;
-      npmLockPath: string;
-      yarnLockPath: string;
-    }
-  >;
+export class Package {
+  name: string;
 
-  packageManageTool = PACKAGE_MANAGE_TOOL.npm;
+  children: Array<Package>;
 
-  isLernaProject = false;
+  options: Required<Omit<IPackageParameters, 'emptyCreate'>> & {
+    /**
+     * 配置路径
+     */
+    readonly rootConfigPath: string;
+  };
 
-  packages: Record<string, ISubPackage> = {};
+  static readConfig = (rootConfigPath: string) => {
+    const text = fs.readFileSync(rootConfigPath, 'utf-8');
+    const config = JSON.parse(text);
 
-  get rootConfigPath() {
-    return path.join(this.options.rootPath, this.options.configPath);
-  }
+    return config as IPackage;
+  };
 
-  constructor(parameters: INpmParameters = {}) {
-    const { rootPath = process.cwd(), configPath = 'package.json', getEarsPackageManageTool } = parameters;
+  constructor(parameters: IPackageParameters = {}) {
+    const {
+      dirName = process.cwd(),
+      configFileName = 'package.json',
+      isWorkspaces = false,
+      isWorkspace = false,
+      workspacesDir = dirName,
+      relativeWorkspacesDir = '',
+      isLerna = false,
+      isYarn = false
+    } = parameters;
 
-    this.options.rootPath = rootPath;
-    this.options.configPath = configPath;
-    this.options.npmLockPath = path.join(rootPath, 'package-lock.json');
-    this.options.yarnLockPath = path.join(rootPath, 'yarn.lock');
-    this.options.lernaConfigPath = path.join(rootPath, 'lerna.json');
+    if (!fs.existsSync(path.join(dirName, configFileName))) throw new Error('未检测到 NPM 配置！');
 
-    if (!fs.existsSync(path.join(rootPath, configPath))) throw new Error('未检测到 NPM 配置！');
+    const config = Package.readConfig(path.join(dirName, configFileName));
 
-    this.packageManageTool = fs.existsSync(this.options.npmLockPath)
-      ? PACKAGE_MANAGE_TOOL.npm
-      : fs.existsSync(this.options.yarnLockPath)
-      ? PACKAGE_MANAGE_TOOL.yarn
-      : getEarsPackageManageTool
-      ? getEarsPackageManageTool(PACKAGE_MANAGE_TOOL)
-      : PACKAGE_MANAGE_TOOL.npm;
+    this.options = {
+      dirName: dirName,
+      configFileName,
+      get rootConfigPath() {
+        return path.join(this.dirName, this.configFileName);
+      },
+      isWorkspaces: isWorkspaces || !!config.workspaces,
+      isWorkspace: isWorkspace,
+      workspacesDir: workspacesDir,
+      relativeWorkspacesDir: relativeWorkspacesDir,
+      isLerna: isLerna || fs.existsSync(path.join(dirName, 'lerna.json')),
+      isYarn: isYarn || fs.existsSync(path.join(dirName, 'yarn.lock'))
+    };
 
-    this.isLernaProject = fs.existsSync(this.options.lernaConfigPath);
+    this.name = config.name;
 
-    if (this.isLernaProject) {
-      const text = fs.readFileSync(this.options.lernaConfigPath, 'utf-8');
-      const lernaConfig = JSON.parse(text);
+    this.children = [];
 
-      for (let lernaPackage of lernaConfig.packages || ['packages/*']) {
-        lernaPackage = (lernaPackage as string).replace('/*', '');
+    if (this.options.isWorkspaces) {
+      for (let workspace of config.workspaces || ['packages/*']) {
+        workspace = (workspace as string).replace('/*', '');
 
-        const files = fs.readdirSync(path.join(rootPath, lernaPackage));
+        const files = fs.readdirSync(path.join(dirName, workspace));
         for (const fileName of files) {
-          const configPath = path.join(rootPath, lernaPackage, fileName, 'package.json');
-          const config = this.readConfig(configPath);
-          this.packages[config.name] = {
-            name: config.name,
-            dirName: fileName,
-            relativeDir: lernaPackage,
-            relativePath: path.join(lernaPackage, fileName),
-            absolutePath: path.join(rootPath, lernaPackage, fileName),
-            absoluteConfigPath: configPath,
-            config
+          const packageParams: IPackageParameters = {
+            dirName: path.join(dirName, workspace, fileName),
+            configFileName: 'package.json',
+            isWorkspaces: false,
+            workspacesDir: dirName,
+            isWorkspace: true,
+            relativeWorkspacesDir: path.join(workspace, fileName),
+            isLerna: isLerna,
+            isYarn: isYarn
           };
+
+          this.children.push(new Package(packageParams));
         }
       }
     }
   }
 
-  protected getInstallCommand(packageName: string, isDev = false) {
-    if (this.packageManageTool === PACKAGE_MANAGE_TOOL.yarn) {
-      if (this.isLernaProject) return `yarn add ${packageName} -W${isDev ? 'D' : ''}`;
-      return `yarn add ${packageName}${isDev ? ' -D' : ''}`;
-    }
-
-    return `npm install ${packageName}${isDev ? ' -D' : ''}`;
-  }
-
-  protected getUninstallCommand(packageName: string) {
-    if (this.packageManageTool === PACKAGE_MANAGE_TOOL.yarn) {
-      if (this.isLernaProject) return `yarn remove ${packageName} -WD`;
-      return `yarn remove ${packageName}`;
-    }
-
-    return `npm uninstall ${packageName}`;
-  }
-
   /**
    * 读配置
    */
-  readConfig(configPath = this.rootConfigPath) {
-    const text = fs.readFileSync(configPath, 'utf-8');
-    const config = JSON.parse(text);
-
-    return config as IPackage;
-  }
-
-  /**
-   * 读子包配置
-   * @param packageName 子包名
-   */
-  readConfigLerna(packageName: string) {
-    return this.readConfig(this.packages[packageName].absoluteConfigPath);
-  }
-
-  /**
-   * 读所有子包配置
-   */
-  readConfigLernaAll() {
-    const configAll: Record<string, IPackage> = {};
-
-    for (const packageName of Object.keys(this.packages)) {
-      configAll[packageName] = this.readConfigLerna(packageName);
-    }
-
-    return configAll;
+  readConfig() {
+    return Package.readConfig(this.options.rootConfigPath);
   }
 
   /**
    * 写配置
-   * @param config 待写入配置
-   * @todo: config 函数式写入，部分混入
    */
-  writeConfig(config: Record<string, any>, configPath = this.rootConfigPath) {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  writeConfig(config: IPackage) {
+    fs.writeFileSync(this.options.rootConfigPath, JSON.stringify(config, null, 2), 'utf8');
   }
 
   /**
-   * 写子包配置
-   * @param packageName 子包名
+   * 写部分配置
    */
-  writeConfigLerna(config: Record<string, any>, packageName: string) {
-    return this.writeConfig(config, this.packages[packageName].absoluteConfigPath);
+  writePartConfig(config: Partial<IPackage>) {
+    const oldConfig = this.readConfig();
+    const mergeConfig = { ...oldConfig, ...config };
+
+    this.writeConfig(mergeConfig);
+
+    return mergeConfig as IPackage;
+  }
+
+  /**
+   * 安装命令
+   */
+  protected commandInstall(waitInstallPackageName: string, workspacePackageName?: string, isDev?: boolean) {
+    if (this.options.isYarn) {
+      const dev = isDev ? ' --dev' : '';
+
+      if (this.options.isWorkspace) {
+        if (this.options.isLerna) {
+          return execa.commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${dev}`, {
+            cwd: this.options.workspacesDir,
+            stdio: 'inherit'
+          });
+        }
+
+        return execa.commandSync(`yarn workspace ${workspacePackageName} add ${waitInstallPackageName}${dev}`, {
+          cwd: this.options.workspacesDir,
+          stdio: 'inherit'
+        });
+      }
+
+      if (this.options.isWorkspaces)
+        return execa.commandSync(`yarn add ${waitInstallPackageName} -W${dev}`, {
+          cwd: this.options.dirName,
+          stdio: 'inherit'
+        });
+
+      return execa.commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
+    } else {
+      const dev = isDev ? ' --save-dev' : '';
+      const lernaDev = isDev ? '--dev' : '';
+
+      if (this.options.isWorkspace) {
+        if (this.options.isLerna) {
+          return execa.commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${lernaDev}`, {
+            cwd: this.options.workspacesDir,
+            stdio: 'inherit'
+          });
+        }
+
+        return execa.commandSync(`npm install ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+          cwd: this.options.workspacesDir,
+          stdio: 'inherit'
+        });
+      }
+
+      if (this.options.isWorkspaces)
+        return execa.commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+          cwd: this.options.dirName,
+          stdio: 'inherit'
+        });
+
+      return execa.commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
+    }
+  }
+
+  /**
+   * 卸载命令
+   */
+  protected commandUnInstall(waitInstallPackageName: string, workspacePackageName?: string, isDev?: boolean) {
+    if (this.options.isYarn) {
+      const dev = isDev ? ' --dev' : '';
+
+      if (this.options.isWorkspace)
+        return execa.commandSync(`yarn workspace ${workspacePackageName} remove ${waitInstallPackageName}${dev}`, {
+          cwd: this.options.workspacesDir,
+          stdio: 'inherit'
+        });
+
+      if (this.options.isWorkspaces)
+        return execa.commandSync(`yarn remove ${waitInstallPackageName} -W${dev}`, {
+          cwd: this.options.dirName,
+          stdio: 'inherit'
+        });
+
+      return execa.commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
+    } else {
+      const dev = isDev ? ' --save-dev' : '';
+
+      if (this.options.isWorkspace) {
+        return execa.commandSync(`npm uninstall ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+          cwd: this.options.workspacesDir,
+          stdio: 'inherit'
+        });
+      }
+
+      if (this.options.isWorkspaces)
+        return execa.commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+          cwd: this.options.dirName,
+          stdio: 'inherit'
+        });
+
+      return execa.commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
+    }
   }
 
   /**
@@ -147,7 +222,7 @@ class NpmOperate {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     for (const dependency of dependencies) {
-      execa.commandSync(this.getInstallCommand(dependency, false), { stdio: 'inherit' });
+      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
     }
   }
 
@@ -159,7 +234,7 @@ class NpmOperate {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     for (const dependency of dependencies) {
-      execa.commandSync(this.getInstallCommand(dependency, true), { stdio: 'inherit' });
+      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, true);
     }
   }
 
@@ -170,7 +245,7 @@ class NpmOperate {
   uninstall(dependencies: string | Array<string>) {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
-    const npmConfigText = fs.readFileSync(this.rootConfigPath, 'utf-8');
+    const npmConfigText = fs.readFileSync(this.options.rootConfigPath, 'utf-8');
     const npmConfig = JSON.parse(npmConfigText);
     let allDependencies: Array<string> = [];
 
@@ -185,70 +260,10 @@ class NpmOperate {
     for (const dependency of dependencies) {
       if (!allDependencies.includes(dependency)) continue;
 
-      execa.commandSync(this.getUninstallCommand(dependency), { stdio: 'inherit' });
-    }
-  }
-
-  /**
-   * 安装子包生产依赖
-   * @param dependencies 待安装依赖
-   * @param packages 需要安装依赖的子包
-   */
-  installLerna(dependencies: string | Array<string>, packages: string | Array<string> = Object.keys(this.packages)) {
-    if (!Array.isArray(dependencies)) dependencies = [dependencies];
-    if (!Array.isArray(packages)) packages = [packages];
-
-    for (const dependency of dependencies) {
-      for (const packageName of packages) {
-        execa.commandSync(`lerna add ${dependency} --scope=${packageName}`, { stdio: 'inherit' });
-      }
-    }
-  }
-
-  /**
-   * 安装子包开发依赖
-   * @param dependencies 待安装依赖
-   * @param packages 需要安装依赖的子包
-   */
-  installDevLerna(dependencies: string | Array<string>, packages: string | Array<string> = Object.keys(this.packages)) {
-    if (!Array.isArray(dependencies)) dependencies = [dependencies];
-    if (!Array.isArray(packages)) packages = [packages];
-
-    for (const dependency of dependencies) {
-      for (const packageName of packages) {
-        execa.commandSync(`lerna add ${dependency} --scope=${packageName} -D`, { stdio: 'inherit' });
-      }
-    }
-  }
-
-  /**
-   * 卸载子包依赖
-   * @param dependencies 待卸载依赖
-   * @param packages 需要安装依赖的子包
-   */
-  uninstallLerna(dependencies: string | Array<string>, packages: string | Array<string> = Object.keys(this.packages)) {
-    if (!Array.isArray(dependencies)) dependencies = [dependencies];
-    if (!Array.isArray(packages)) packages = [packages];
-
-    for (const packageName of packages) {
-      const npmConfig = this.readConfigLerna(packageName);
-
-      for (const dependency of dependencies) {
-        if (npmConfig.hasOwnProperty('dependencies') && npmConfig.dependencies?.[dependency]) {
-          delete npmConfig.dependencies[dependency];
-        }
-
-        if (npmConfig.hasOwnProperty('devDependencies') && npmConfig.devDependencies?.[dependency]) {
-          delete npmConfig.devDependencies[dependency];
-        }
-      }
-
-      this.writeConfigLerna(npmConfig, packageName);
+      this.commandUnInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
     }
   }
 }
 
-export * from './constants';
 export * from './types';
 export * from './types/package';
-export default NpmOperate;
