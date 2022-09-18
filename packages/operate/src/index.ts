@@ -70,8 +70,8 @@ export class Package {
             workspacesDir: dirName,
             isWorkspace: true,
             relativeWorkspacesDir: path.join(workspace, fileName),
-            isLerna: isLerna,
-            isYarn: isYarn
+            isLerna: this.options.isLerna,
+            isYarn: this.options.isYarn
           };
 
           this.children.push(new Package(packageParams));
