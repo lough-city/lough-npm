@@ -6,7 +6,11 @@
     "npm",
     "node"
   ],
-  "author": "City <city@nanzc.com>",
+  "author": {
+    "name": "City",
+    "email": "city@nanzc.com",
+    "url": "https://nanzc.com"
+  },
   "homepage": "https://github.com/AnCIity/lough-npm",
   "license": "MIT",
   "main": "lib/index.js",
@@ -26,7 +30,13 @@
   "bugs": {
     "url": "https://github.com/AnCIity/lough-npm/issues"
   },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "engineStrict": true,
   "engines": {
+    "npm": ">=7.0.0",
     "node": ">=14.17.0"
   },
   "devDependencies": {
@@ -34,9 +44,5 @@
   },
   "dependencies": {
     "execa": "5.1.1"
-  },
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
   }
 }
