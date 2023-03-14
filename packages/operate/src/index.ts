@@ -133,13 +133,13 @@ export class Package {
           stdio: 'inherit'
         });
 
-      return execa.commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
+      return execa.commandSync(`yarn add ${waitInstallPackageName}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
     } else {
       const dev = isDev ? ' --save-dev' : '';
-      const lernaDev = isDev ? '--dev' : '';
+      const lernaDev = isDev ? ' --dev' : '';
 
       if (this.options.isWorkspace) {
         if (this.options.isLerna) {
