@@ -1,6 +1,6 @@
 {
   "name": "@lough/npm-operate",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "lough npm operate.",
   "keywords": [
     "npm",
@@ -15,7 +15,6 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "typings": "lib/index.d.ts",
   "files": [
     "lib"
   ],

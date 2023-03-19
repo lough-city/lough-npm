@@ -265,5 +265,7 @@ export class Package {
   }
 }
 
-export * from './types';
+export * from './constants/package';
+export * from './schemas/package';
+export * from './types/index';
 export * from './types/package';

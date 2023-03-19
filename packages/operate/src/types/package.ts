@@ -1,4 +1,12 @@
-import { NPM_LIFE_CYCLE } from '../constants/package';
+import {
+  PACKAGE_DEPENDENCIES_FIELD,
+  PACKAGE_DESCRIPTION_FIELD,
+  PACKAGE_LIFE_CYCLE,
+  PACKAGE_NORM_FIELD,
+  PACKAGE_PUBLISH_FIELD,
+  PACKAGE_REQUIRED_FIELD,
+  PACKAGE_SCRIPT_FIELD
+} from '../constants/package';
 
 /**
  * 作者
@@ -25,11 +33,11 @@ interface RequiredConfig {
   /**
    * 名称
    */
-  name: string;
+  [PACKAGE_REQUIRED_FIELD.name]: string;
   /**
    * 版本
    */
-  version: string;
+  [PACKAGE_REQUIRED_FIELD.version]: string;
 }
 
 /**
@@ -39,27 +47,27 @@ interface DescriptionConfig {
   /**
    * 描述
    */
-  description: string;
+  [PACKAGE_DESCRIPTION_FIELD.description]: string;
   /**
    * 关键词
    */
-  keywords: string;
+  [PACKAGE_DESCRIPTION_FIELD.keywords]: string;
   /**
    * 作者
    */
-  author: string | Author;
+  [PACKAGE_DESCRIPTION_FIELD.author]: string | Author;
   /**
    * 贡献者们
    */
-  contributors: Array<string | Author>;
+  [PACKAGE_DESCRIPTION_FIELD.contributors]: Array<string | Author>;
   /**
    * 主页
    */
-  homepage: string;
+  [PACKAGE_DESCRIPTION_FIELD.homepage]: string;
   /**
    * 仓库
    */
-  repository: {
+  [PACKAGE_DESCRIPTION_FIELD.repository]: {
     /**
      * 类型
      * @example "git"
@@ -79,11 +87,22 @@ interface DescriptionConfig {
   /**
    * 问题
    */
-  bugs: string;
+  [PACKAGE_DESCRIPTION_FIELD.bugs]:
+    | string
+    | {
+        /**
+         * 地址
+         */
+        url: string;
+        /**
+         * 邮箱
+         */
+        email: string;
+      };
   /**
    * 捐助
    */
-  funding: {
+  [PACKAGE_DESCRIPTION_FIELD.funding]: {
     /**
      * 类型
      */
@@ -103,60 +122,45 @@ interface NormConfig {
    * 类型
    * @description 定义 `node` 环境下，包规范是 `module` 还是 `commonjs`。
    */
-  type: 'module' | 'commonjs';
+  [PACKAGE_NORM_FIELD.type]: 'module' | 'commonjs';
   /**
    * 包含文件
    * @description 包在发布时包含的文件。
    */
-  files: Array<string>;
+  [PACKAGE_NORM_FIELD.files]: Array<string>;
   /**
    * 入口
    * @description 定义了 `NPM` 包的入口文件，`browser` 环境和 `node` 环境均可使用。
    */
-  main: string;
-  /**
-   * 浏览器入口
-   * @description 定义 npm 包在 browser 环境下的入口文件。
-   */
-  browser: string;
+  [PACKAGE_NORM_FIELD.main]: string;
   /**
    * 模块入口
    * @description 定义 `NPM` 包在 `ES Module` 规范的入口文件，`browser` 环境和 `node` 环境均可使用。
    * @tripartite `构建工具`
    */
-  module: string;
-  /**
-   * 条件导出
-   * @description `NodeJS` 条件导出提供了一种根据特定条件映射到不同路径的方法。
-   */
-  exports: any;
+  [PACKAGE_NORM_FIELD.module]: string;
   /**
    * 类型入口
-   * @description 指定 `typescript` 类型入口文件，帮助包提供更好的类型服务
+   * @description 指定 `typescript` 类型入口文件，帮助包提供更好的类型服务。
    * @tripartite `typescript`
    */
-  types: string;
+  [PACKAGE_NORM_FIELD.types]: string;
   /**
    * 分发入口
    * @description 提供一个给 [UNPKG](https://www.unpkg.com/)，用于支持 CDN 服务。
    * @tripartite `unpkg`
    */
-  unpkg: string;
+  [PACKAGE_NORM_FIELD.unpkg]: string;
   /**
    * 可执行文件
    * @example {"lough": "./bin/index.js"}
    */
-  bin: Record<string, string>;
-  /**
-   * 规范目录
-   * @example {"lib": "src/lib/"}
-   */
-  directories: Record<string, string>;
+  [PACKAGE_NORM_FIELD.bin]: Record<string, string>;
   /**
    * 工作区
    * @description 描述了本地文件系统中的位置，安装客户端应该查找这些位置，以找到需要用符号链接到顶级 node_modules 文件夹的每个工作空间。
    */
-  workspaces: Array<string>;
+  [PACKAGE_NORM_FIELD.workspaces]: Array<string>;
 }
 
 /**
@@ -167,12 +171,12 @@ interface ScriptConfig {
    * 脚本
    * @description 包含在包生命周期的不同时间运行的脚本命令。
    */
-  scripts: Partial<{ [K in NPM_LIFE_CYCLE]: string }> & Record<string, string>;
+  [PACKAGE_SCRIPT_FIELD.scripts]: Partial<{ [K in PACKAGE_LIFE_CYCLE]: string }> & Record<string, string>;
   /**
    * 配置
-   * @description 存在一个包含 `npm_package_config_*` 环境变量的 `start` 命令
+   * @description 存在一个包含 `npm_package_config_*` 环境变量的启动命令
    */
-  config: Record<string, any>;
+  [PACKAGE_SCRIPT_FIELD.config]: Record<string, string>;
 }
 
 /**
@@ -180,17 +184,17 @@ interface ScriptConfig {
  */
 interface DependenciesConfig {
   /**
-   * 依赖
+   * 生产依赖
    */
-  dependencies: Record<string, string>;
+  [PACKAGE_DEPENDENCIES_FIELD.dependencies]: Record<string, string>;
   /**
    * 开发依赖
    */
-  devDependencies: Record<string, string>;
+  [PACKAGE_DEPENDENCIES_FIELD.devDependencies]: Record<string, string>;
   /**
-   * 重写依赖关系
+   * 同等依赖
    */
-  overrides: Record<string, any>;
+  [PACKAGE_DEPENDENCIES_FIELD.peerDependencies]: Record<string, string>;
 }
 
 /**
@@ -202,11 +206,11 @@ interface PublishConfig {
    * @description 如果你在包中设置了 `true`。那么 NPM 将拒绝发布它。
    * @default false
    */
-  private: boolean;
+  [PACKAGE_PUBLISH_FIELD.private]: boolean;
   /**
    * 发布配置
    */
-  publishConfig: {
+  [PACKAGE_PUBLISH_FIELD.publishConfig]: {
     /**
      * 注册表地址，如：`https://registry.npmjs.org/`
      */
@@ -220,28 +224,31 @@ interface PublishConfig {
   /**
    * 许可证
    */
-  license: string;
+  [PACKAGE_PUBLISH_FIELD.license]: string;
   /**
    * 操作系统
    */
-  os: NodeJS.Platform;
+  [PACKAGE_PUBLISH_FIELD.os]: NodeJS.Platform;
   /**
    * 主机架构
    */
-  cpu: NodeJS.Architecture;
+  [PACKAGE_PUBLISH_FIELD.cpu]: NodeJS.Architecture;
   /**
    * 工作环境
    */
-  engines: Partial<{ node: string; npm: string }> & Record<string, string>;
+  [PACKAGE_PUBLISH_FIELD.engines]: Partial<{ node: string; npm: string }> & Record<string, string>;
 }
 
 /**
  * 第三方配置
  */
 interface TripartiteConfig {
-  'lint-staged': Record<string, Array<string>>;
+  ['lint-staged']: Record<string, Array<string>>;
 }
 
+/**
+ * 包类型
+ */
 export type IPackage = RequiredConfig &
   Partial<DescriptionConfig> &
   Partial<NormConfig> &
