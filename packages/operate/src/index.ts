@@ -3,6 +3,39 @@ import path from 'path';
 import execa from 'execa';
 import { IPackageParameters } from './types';
 import { IPackage } from './types/package';
+import { package_field_schema, RULE_TYPE, DataSchema, ObjectRule } from './schemas/package';
+
+const objectSortByKeys = <O extends object>(
+  obj: O,
+  keys: Array<string>,
+  handle?: (key: string, value: O[keyof O]) => O[keyof O]
+) => {
+  const _object = JSON.parse(JSON.stringify(obj)) as O;
+  const fork = {} as O;
+
+  for (const key of keys) {
+    if (_object.hasOwnProperty(key)) {
+      fork[key] = handle ? handle(key, _object[key]) : _object[key];
+      delete _object[key];
+    }
+  }
+
+  return { ...fork, ..._object };
+};
+
+const objectSortByDataSchema = <O extends Record<string, any>, DS extends ObjectRule>(obj: O, dataSchema: DS) => {
+  const fork = objectSortByKeys(obj, Object.keys(dataSchema.properties), (key, value) => {
+    const { rules } = dataSchema.properties[key];
+
+    for (const rule of rules) {
+      if (rule.type === RULE_TYPE.object) return objectSortByDataSchema(value, rule);
+    }
+
+    return value;
+  });
+
+  return fork;
+};
 
 export class Package {
   name: string;
@@ -91,7 +124,9 @@ export class Package {
    * 写配置
    */
   writeConfig(config: IPackage) {
-    fs.writeFileSync(this.options.rootConfigPath, JSON.stringify(config, null, 2), 'utf8');
+    const fork = objectSortByDataSchema(config, package_field_schema);
+
+    fs.writeFileSync(this.options.rootConfigPath, JSON.stringify(fork, null, 2), 'utf8');
   }
 
   /**

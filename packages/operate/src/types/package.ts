@@ -174,7 +174,7 @@ interface ScriptConfig {
   [PACKAGE_SCRIPT_FIELD.scripts]: Partial<{ [K in PACKAGE_LIFE_CYCLE]: string }> & Record<string, string>;
   /**
    * 配置
-   * @description 存在一个包含 `npm_package_config_*` 环境变量的启动命令
+   * @description 存在一个包含 `npm_package_config_*` 环境变量的启动命令。
    */
   [PACKAGE_SCRIPT_FIELD.config]: Record<string, string>;
 }
@@ -240,13 +240,6 @@ interface PublishConfig {
 }
 
 /**
- * 第三方配置
- */
-interface TripartiteConfig {
-  ['lint-staged']: Record<string, Array<string>>;
-}
-
-/**
  * 包类型
  */
 export type IPackage = RequiredConfig &
@@ -254,6 +247,4 @@ export type IPackage = RequiredConfig &
   Partial<NormConfig> &
   Partial<ScriptConfig> &
   Partial<DependenciesConfig> &
-  Partial<PublishConfig> &
-  Partial<TripartiteConfig> &
-  Partial<TripartiteConfig>;
+  Partial<PublishConfig>;
