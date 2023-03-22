@@ -214,7 +214,7 @@ export const package_field_schema: ObjectRule<keyof typeof PACKAGE_FIELD> = {
      */
     [PACKAGE_REQUIRED_FIELD.version]: {
       title: '版本',
-      description: '版本必须可以被 node-semver 解析， node-semver 作为依赖项与 npm 捆绑在一起。',
+      description: '版本必须可以被 `node-semver` 解析，`node-semver` 作为依赖项与 `NPM` 捆绑在一起。',
       rules: [{ type: RULE_TYPE.string }]
     },
     /**
