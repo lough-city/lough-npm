@@ -13,7 +13,7 @@
     "@lough/commitlint-config": "^0.1.1",
     "@lough/eslint-config": "^0.1.0",
     "husky": "7.0.2",
-    "lerna": "^4.0.0",
+    "lerna": "^6.5.1",
     "lint-staged": "11.1.2",
     "prettier": "^2.7.1"
   },
