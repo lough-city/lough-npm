@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import execa from 'execa';
+import { package_field_schema, RULE_TYPE, ObjectRule } from './schemas/package';
 import { IPackageParameters } from './types';
 import { IPackage } from './types/package';
-import { package_field_schema, RULE_TYPE, DataSchema, ObjectRule } from './schemas/package';
 
 const objectSortByKeys = <O extends object>(
   obj: O,
