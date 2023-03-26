@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import execa from 'execa';
+import { commandSync } from 'execa';
 import { package_field_schema, RULE_TYPE, ObjectRule } from './schemas/package';
 import { IPackageParameters } from './types';
 import { IPackage } from './types/package';
@@ -28,7 +28,8 @@ const objectSortByDataSchema = <O extends Record<string, any>, DS extends Object
     const { rules } = dataSchema.properties[key];
 
     for (const rule of rules) {
-      if (rule.type === RULE_TYPE.object) return objectSortByDataSchema(value, rule);
+      if (rule.type === RULE_TYPE.object && Object.prototype.toString.call(value) === '[object Object]')
+        return objectSortByDataSchema(value, rule);
     }
 
     return value;
@@ -37,11 +38,28 @@ const objectSortByDataSchema = <O extends Record<string, any>, DS extends Object
   return fork;
 };
 
+/**
+ * NPM 包
+ */
 export class Package {
+  /**
+   * 名称
+   */
   name: string;
 
+  /**
+   * 版本
+   */
+  version: string;
+
+  /**
+   * 子包
+   */
   children: Array<Package>;
 
+  /**
+   * 选项
+   */
   options: Required<Omit<IPackageParameters, 'emptyCreate'>> & {
     /**
      * 配置路径
@@ -87,6 +105,7 @@ export class Package {
     };
 
     this.name = config.name;
+    this.version = config.version;
 
     this.children = [];
 
@@ -150,25 +169,25 @@ export class Package {
 
       if (this.options.isWorkspace) {
         if (this.options.isLerna) {
-          return execa.commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${dev}`, {
+          return commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${dev}`, {
             cwd: this.options.workspacesDir,
             stdio: 'inherit'
           });
         }
 
-        return execa.commandSync(`yarn workspace ${workspacePackageName} add ${waitInstallPackageName}${dev}`, {
+        return commandSync(`yarn workspace ${workspacePackageName} add ${waitInstallPackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return execa.commandSync(`yarn add ${waitInstallPackageName} -W${dev}`, {
+        return commandSync(`yarn add ${waitInstallPackageName} -W${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return execa.commandSync(`yarn add ${waitInstallPackageName}${dev}`, {
+      return commandSync(`yarn add ${waitInstallPackageName}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -178,25 +197,25 @@ export class Package {
 
       if (this.options.isWorkspace) {
         if (this.options.isLerna) {
-          return execa.commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${lernaDev}`, {
+          return commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${lernaDev}`, {
             cwd: this.options.workspacesDir,
             stdio: 'inherit'
           });
         }
 
-        return execa.commandSync(`npm install ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+        return commandSync(`npm install ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return execa.commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+        return commandSync(`npm install ${waitInstallPackageName}${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return execa.commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+      return commandSync(`npm install ${waitInstallPackageName}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -211,18 +230,18 @@ export class Package {
       const dev = isDev ? ' --dev' : '';
 
       if (this.options.isWorkspace)
-        return execa.commandSync(`yarn workspace ${workspacePackageName} remove ${waitInstallPackageName}${dev}`, {
+        return commandSync(`yarn workspace ${workspacePackageName} remove ${waitInstallPackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
 
       if (this.options.isWorkspaces)
-        return execa.commandSync(`yarn remove ${waitInstallPackageName} -W${dev}`, {
+        return commandSync(`yarn remove ${waitInstallPackageName} -W${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return execa.commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
+      return commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -230,19 +249,19 @@ export class Package {
       const dev = isDev ? ' --save-dev' : '';
 
       if (this.options.isWorkspace) {
-        return execa.commandSync(`npm uninstall ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+        return commandSync(`npm uninstall ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return execa.commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+        return commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return execa.commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+      return commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });

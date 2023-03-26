@@ -1,7 +1,7 @@
 {
-  "name": "@lough/npm-operate",
-  "version": "0.2.4",
-  "description": "lough npm operate.",
+  "name": "@lough/npm-cli",
+  "version": "0.0.0",
+  "description": "This is a NPM tool docked in lough.",
   "keywords": [
     "npm",
     "node",
@@ -26,21 +26,28 @@
   ],
   "main": "es/index.js",
   "types": "es/index.d.ts",
+  "bin": {
+    "lough-npm": "es/index.js"
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "lough-build",
     "dev": "lough-build dev"
   },
   "dependencies": {
-    "execa": "5.1.1"
+    "@lough/npm-operate": "^0.2.4",
+    "chalk": "^5.2.0",
+    "commander": "^10.0.0",
+    "inquirer": "^9.1.5",
+    "ora": "^6.3.0"
   },
   "devDependencies": {
     "@lough/build-cli": "^0.0.15",
-    "@types/node": "^18.0.0"
+    "@types/inquirer": "^9.0.3"
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.com/"
   },
   "license": "MIT",
   "engines": {
