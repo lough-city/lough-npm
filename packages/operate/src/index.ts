@@ -111,7 +111,7 @@ export class Package {
 
     if (this.options.isWorkspaces) {
       for (let workspace of config.workspaces || ['packages/*']) {
-        workspace = (workspace as string).replace('/*', '');
+        workspace = workspace.replace('/*', '');
 
         const files = fs.readdirSync(path.join(dirName, workspace));
         for (const fileName of files) {
@@ -161,33 +161,38 @@ export class Package {
   }
 
   /**
-   * 安装命令
+   * 命令安装
    */
-  protected commandInstall(waitInstallPackageName: string, workspacePackageName?: string, isDev?: boolean) {
+  protected commandInstall(packageNames: string | Array<string>, workspacePackageName?: string, isDev?: boolean) {
+    packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
+    const joinedPackageNames = packageNames.join(' ');
+
     if (this.options.isYarn) {
       const dev = isDev ? ' --dev' : '';
 
       if (this.options.isWorkspace) {
         if (this.options.isLerna) {
-          return commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${dev}`, {
-            cwd: this.options.workspacesDir,
-            stdio: 'inherit'
-          });
+          return packageNames.map(name =>
+            commandSync(`lerna add ${name} --scope=${workspacePackageName}${dev}`, {
+              cwd: this.options.workspacesDir,
+              stdio: 'inherit'
+            })
+          );
         }
 
-        return commandSync(`yarn workspace ${workspacePackageName} add ${waitInstallPackageName}${dev}`, {
+        return commandSync(`yarn workspace ${workspacePackageName} add ${joinedPackageNames}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return commandSync(`yarn add ${waitInstallPackageName} -W${dev}`, {
+        return commandSync(`yarn add ${joinedPackageNames} -W${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return commandSync(`yarn add ${waitInstallPackageName}${dev}`, {
+      return commandSync(`yarn add ${joinedPackageNames}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -197,25 +202,25 @@ export class Package {
 
       if (this.options.isWorkspace) {
         if (this.options.isLerna) {
-          return commandSync(`lerna add ${waitInstallPackageName} --scope=${workspacePackageName}${lernaDev}`, {
+          return commandSync(`lerna add ${packageNames} --scope=${workspacePackageName}${lernaDev}`, {
             cwd: this.options.workspacesDir,
             stdio: 'inherit'
           });
         }
 
-        return commandSync(`npm install ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+        return commandSync(`npm install ${joinedPackageNames} -w ${workspacePackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+        return commandSync(`npm install ${joinedPackageNames}${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return commandSync(`npm install ${waitInstallPackageName}${dev}`, {
+      return commandSync(`npm install ${joinedPackageNames}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -223,25 +228,28 @@ export class Package {
   }
 
   /**
-   * 卸载命令
+   * 命令卸载
    */
-  protected commandUnInstall(waitInstallPackageName: string, workspacePackageName?: string, isDev?: boolean) {
+  protected commandUnInstall(packageNames: string | Array<string>, workspacePackageName?: string, isDev?: boolean) {
+    packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
+    const joinedPackageNames = packageNames.join(' ');
+
     if (this.options.isYarn) {
       const dev = isDev ? ' --dev' : '';
 
       if (this.options.isWorkspace)
-        return commandSync(`yarn workspace ${workspacePackageName} remove ${waitInstallPackageName}${dev}`, {
+        return commandSync(`yarn workspace ${workspacePackageName} remove ${joinedPackageNames}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
 
       if (this.options.isWorkspaces)
-        return commandSync(`yarn remove ${waitInstallPackageName} -W${dev}`, {
+        return commandSync(`yarn remove ${joinedPackageNames} -W${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return commandSync(`yarn remove ${waitInstallPackageName}${dev}`, {
+      return commandSync(`yarn remove ${joinedPackageNames}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -249,19 +257,19 @@ export class Package {
       const dev = isDev ? ' --save-dev' : '';
 
       if (this.options.isWorkspace) {
-        return commandSync(`npm uninstall ${waitInstallPackageName} -w ${workspacePackageName}${dev}`, {
+        return commandSync(`npm uninstall ${joinedPackageNames} -w ${workspacePackageName}${dev}`, {
           cwd: this.options.workspacesDir,
           stdio: 'inherit'
         });
       }
 
       if (this.options.isWorkspaces)
-        return commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+        return commandSync(`npm uninstall ${joinedPackageNames}${dev}`, {
           cwd: this.options.dirName,
           stdio: 'inherit'
         });
 
-      return commandSync(`npm uninstall ${waitInstallPackageName}${dev}`, {
+      return commandSync(`npm uninstall ${joinedPackageNames}${dev}`, {
         cwd: this.options.dirName,
         stdio: 'inherit'
       });
@@ -269,52 +277,110 @@ export class Package {
   }
 
   /**
+   * 查看注册表信息
+   */
+  view(packageName: string) {
+    return JSON.parse(commandSync(`npm view ${packageName} --json`).stdout) as IPackage;
+  }
+
+  /**
+   * 冷安装
+   */
+  protected coldInstall(packageNames: string | Array<string>) {
+    packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
+    const config = this.readConfig();
+    if (!config.dependencies) config.dependencies = {};
+
+    for (const packageName of packageNames) {
+      const { version } = this.view(packageName);
+      if (!version) throw new Error(`${packageName} not found version!`);
+      config.dependencies[packageName] = `^${version}`;
+    }
+  }
+
+  /**
+   * 冷卸载
+   */
+  protected coldUnInstall(packageNames: string | Array<string>) {
+    packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
+
+    const config = this.readConfig();
+    if (!config.devDependencies) config.devDependencies = {};
+
+    for (const packageName of packageNames) {
+      const { version } = this.view(packageName);
+      if (!version) throw new Error(`${packageName} not found version!`);
+      config.devDependencies[packageName] = `^${version}`;
+    }
+  }
+
+  /**
    * 安装生产依赖
-   * @param dependencies 待安装依赖
    */
   install(dependencies: string | Array<string>) {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
-    for (const dependency of dependencies) {
-      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
-    }
+    this.commandInstall(dependencies, this.options.isWorkspace ? this.name : undefined, false);
   }
 
   /**
    * 安装开发依赖
-   * @param dependencies 待安装依赖
    */
   installDev(dependencies: string | Array<string>) {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
-    for (const dependency of dependencies) {
-      this.commandInstall(dependency, this.options.isWorkspace ? this.name : undefined, true);
-    }
+    this.commandInstall(dependencies, this.options.isWorkspace ? this.name : undefined, true);
   }
 
   /**
    * 卸载依赖
-   * @param dependencies 待卸载依赖
    */
   uninstall(dependencies: string | Array<string>) {
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
-    const npmConfigText = fs.readFileSync(this.options.rootConfigPath, 'utf-8');
-    const npmConfig = JSON.parse(npmConfigText);
-    let allDependencies: Array<string> = [];
+    const config = this.readConfig();
 
-    if (npmConfig.hasOwnProperty('dependencies')) {
-      allDependencies = allDependencies.concat(Object.keys(npmConfig.dependencies));
+    const allDependencies = [...Object.keys(config.dependencies || {}), ...Object.keys(config.devDependencies || {})];
+
+    const existDependencies = dependencies.filter(dependency => allDependencies.includes(dependency));
+
+    if (existDependencies.length) {
+      this.commandUnInstall(existDependencies, this.options.isWorkspace ? this.name : undefined, false);
     }
+  }
 
-    if (npmConfig.hasOwnProperty('devDependencies')) {
-      allDependencies = allDependencies.concat(Object.keys(npmConfig.devDependencies));
-    }
+  /**
+   * 启动程式
+   */
+  bootstrap() {
+    if (this.options.isYarn) {
+      if (this.options.isWorkspace) {
+        if (this.options.isLerna) {
+          return commandSync('lerna bootstrap', {
+            cwd: this.options.workspacesDir,
+            stdio: 'inherit'
+          });
+        }
+      }
 
-    for (const dependency of dependencies) {
-      if (!allDependencies.includes(dependency)) continue;
+      return commandSync('yarn', {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
+    } else {
+      if (this.options.isWorkspace) {
+        if (this.options.isLerna) {
+          return commandSync('lerna bootstrap', {
+            cwd: this.options.workspacesDir,
+            stdio: 'inherit'
+          });
+        }
+      }
 
-      this.commandUnInstall(dependency, this.options.isWorkspace ? this.name : undefined, false);
+      return commandSync('npm install', {
+        cwd: this.options.dirName,
+        stdio: 'inherit'
+      });
     }
   }
 }
