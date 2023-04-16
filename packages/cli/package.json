@@ -1,6 +1,6 @@
 {
   "name": "@lough/npm-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "This is a NPM tool docked in lough.",
   "keywords": [
     "npm",
@@ -34,7 +34,7 @@
     "dev": "lough-build dev"
   },
   "dependencies": {
-    "@lough/npm-operate": "^0.3.0",
+    "@lough/npm-operate": "^0.3.1",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "inquirer": "^9.1.5",
