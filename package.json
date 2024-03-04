@@ -12,8 +12,9 @@
   "devDependencies": {
     "@lough/commitlint-config": "^0.1.2",
     "@lough/eslint-config": "^0.1.5",
+    "@lough/tsconfig": "^0.0.6",
+    "@types/node": "^18.0.0",
     "husky": "^7.0.2",
-    "lerna": "^6.5.1",
     "lint-staged": "^11.1.2",
     "prettier": "^2.8.7"
   },

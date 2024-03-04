@@ -7,8 +7,8 @@ import { IPackage } from './types/package';
 
 const objectSortByKeys = <O extends object>(
   obj: O,
-  keys: Array<string>,
-  handle?: (key: string, value: O[keyof O]) => O[keyof O]
+  keys: Array<keyof O>,
+  handle?: (key: keyof O, value: O[keyof O]) => O[keyof O]
 ) => {
   const _object = JSON.parse(JSON.stringify(obj)) as O;
   const fork = {} as O;
@@ -23,9 +23,9 @@ const objectSortByKeys = <O extends object>(
   return { ...fork, ..._object };
 };
 
-const objectSortByDataSchema = <O extends Record<string, any>, DS extends ObjectRule>(obj: O, dataSchema: DS) => {
-  const fork = objectSortByKeys(obj, Object.keys(dataSchema.properties), (key, value) => {
-    const { rules } = dataSchema.properties[key];
+const objectSortByDataSchema = <O extends Record<string, any>, DS extends ObjectRule>(obj: O, dataSchema: DS): O => {
+  return objectSortByKeys<O>(obj, Object.keys(dataSchema.properties), function (key, value) {
+    const { rules } = dataSchema.properties[key as keyof typeof dataSchema.properties];
 
     for (const rule of rules) {
       if (rule.type === RULE_TYPE.object && Object.prototype.toString.call(value) === '[object Object]')
@@ -34,8 +34,6 @@ const objectSortByDataSchema = <O extends Record<string, any>, DS extends Object
 
     return value;
   });
-
-  return fork;
 };
 
 /**
@@ -279,12 +277,12 @@ export class Package {
   /**
    * 查看注册表信息
    */
-  view(packageName: string) {
+  protected view(packageName: string) {
     return JSON.parse(commandSync(`npm view ${packageName} --json`).stdout) as IPackage;
   }
 
   /**
-   * 冷安装
+   * 冷安装生产依赖
    */
   protected coldInstall(packageNames: string | Array<string>) {
     packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
@@ -296,14 +294,15 @@ export class Package {
       if (!version) throw new Error(`${packageName} not found version!`);
       config.dependencies[packageName] = `^${version}`;
     }
+
+    this.writeConfig(config);
   }
 
   /**
-   * 冷卸载
+   * 冷安装开发依赖
    */
-  protected coldUnInstall(packageNames: string | Array<string>) {
+  protected coldInstallDev(packageNames: string | Array<string>) {
     packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
-
     const config = this.readConfig();
     if (!config.devDependencies) config.devDependencies = {};
 
@@ -312,12 +311,35 @@ export class Package {
       if (!version) throw new Error(`${packageName} not found version!`);
       config.devDependencies[packageName] = `^${version}`;
     }
+
+    this.writeConfig(config);
+  }
+
+  /**
+   * 冷卸载依赖
+   */
+  protected coldUnInstall(packageNames: string | Array<string>) {
+    packageNames = Array.isArray(packageNames) ? packageNames : [packageNames];
+
+    const config = this.readConfig();
+    if (!config.dependencies) config.dependencies = {};
+    if (!config.devDependencies) config.devDependencies = {};
+
+    for (const packageName of packageNames) {
+      delete config.dependencies[packageName];
+      delete config.devDependencies[packageName];
+    }
+
+    this.writeConfig(config);
   }
 
   /**
    * 安装生产依赖
    */
-  install(dependencies: string | Array<string>) {
+  install(dependencies: string | Array<string>, options: { cold?: boolean } = {}) {
+    const { cold = false } = options;
+    if (cold) return this.coldInstall(dependencies);
+
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     this.commandInstall(dependencies, this.options.isWorkspace ? this.name : undefined, false);
@@ -326,7 +348,10 @@ export class Package {
   /**
    * 安装开发依赖
    */
-  installDev(dependencies: string | Array<string>) {
+  installDev(dependencies: string | Array<string>, options: { cold?: boolean } = {}) {
+    const { cold = false } = options;
+    if (cold) return this.coldInstallDev(dependencies);
+
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     this.commandInstall(dependencies, this.options.isWorkspace ? this.name : undefined, true);
@@ -335,7 +360,10 @@ export class Package {
   /**
    * 卸载依赖
    */
-  uninstall(dependencies: string | Array<string>) {
+  uninstall(dependencies: string | Array<string>, options: { cold?: boolean } = {}) {
+    const { cold = false } = options;
+    if (cold) return this.coldUnInstall(dependencies);
+
     if (!Array.isArray(dependencies)) dependencies = [dependencies];
 
     const config = this.readConfig();

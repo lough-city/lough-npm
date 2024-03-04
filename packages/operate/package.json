@@ -9,7 +9,8 @@
   ],
   "author": {
     "name": "Lough",
-    "email": "lough@nanzc.com"
+    "email": "lough@nanzc.com",
+    "home": "https://lough.city"
   },
   "homepage": "https://github.com/lough-city/lough-npm",
   "repository": {
@@ -27,15 +28,11 @@
   "types": "es/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "lough-build",
-    "dev": "lough-build dev"
+    "build": "npx @lough/build-cli@0.3.2",
+    "dev": "npx @lough/build-cli@0.3.2 dev"
   },
   "dependencies": {
     "execa": "5.1.1"
-  },
-  "devDependencies": {
-    "@lough/build-cli": "^0.0.15",
-    "@types/node": "^18.0.0"
   },
   "publishConfig": {
     "access": "public",
